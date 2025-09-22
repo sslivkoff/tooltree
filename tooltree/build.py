@@ -52,7 +52,7 @@ def create_treemap_data(
     _add_treemap_entry(
         treemap_data=treemap_data,
         name=root_name,
-        parent=None,
+        ancestors=[],
         size=treemap_data['total_size'],
         extra_tooltip_kwargs={},
     )
@@ -61,15 +61,10 @@ def create_treemap_data(
     for i, level in enumerate(levels):
         level_data = df.group_by(*levels[: i + 1]).agg(*metric_aggs)
         for entry in level_data.to_dicts():
-            if i == 0:
-                parent = root_name
-            else:
-                parent = entry[levels[i - 1]]
-
             _add_treemap_entry(
                 treemap_data=treemap_data,
                 name=entry[level],
-                parent=parent,
+                ancestors=[entry[level] for level in levels[:i]],
                 size=entry[metric],
                 extra_tooltip_kwargs={n: entry[n] for n in extra_metric_names},
             )
@@ -81,7 +76,7 @@ def _add_treemap_entry(
     treemap_data: types.TreemapData,
     *,
     name: str,
-    parent: str | None,
+    ancestors: list[str],
     size: int | float,
     extra_tooltip_kwargs: dict[str, typing.Any] | None = None,
 ) -> None:
@@ -91,21 +86,14 @@ def _add_treemap_entry(
         raise Exception('name is None')
 
     name = _add_name_newlines(name, root_name=treemap_data['root_name'])
-    if parent is not None:
-        parent = _add_name_newlines(parent, root_name=treemap_data['root_name'])
+    ancestors = [
+        _add_name_newlines(ancestor, root_name=treemap_data['root_name'])
+        for ancestor in ancestors
+    ]
 
     # determine unique id
-    id = name
-    if parent is not None and id in treemap_data['ids']:
-        id = parent + '_' + id
-    if id in treemap_data['ids']:
-        for i in range(2, 1000):
-            candidate = id + '_' + str(i)
-            if candidate not in treemap_data['ids']:
-                id = candidate
-                break
-        else:
-            raise Exception('could not determine unique id for ' + name)
+    id = '__'.join(ancestors + [name])
+    parent_id = '__'.join(ancestors)
 
     # create tooltip
     item = (
@@ -128,7 +116,7 @@ def _add_treemap_entry(
 
     treemap_data['ids'].append(id)
     treemap_data['labels'].append(name)
-    treemap_data['parents'].append(parent)
+    treemap_data['parents'].append(parent_id)
     treemap_data['sizes'].append(size)
     treemap_data['customdata'].append(item)
 
