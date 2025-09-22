@@ -82,7 +82,7 @@ def _add_treemap_entry(
     ancestors: list[str],
     size: int | float,
     extra_tooltip_kwargs: dict[str, typing.Any] | None = None,
-    metric_format: dict[str, typing.Any],
+    metric_format: dict[str, typing.Any] | None,
 ) -> None:
     import toolstr
 
@@ -90,10 +90,13 @@ def _add_treemap_entry(
         raise Exception('name is None')
 
     name = _add_name_newlines(name, root_name=treemap_data['root_name'])
-    ancestors = [
-        _add_name_newlines(ancestor, root_name=treemap_data['root_name'])
-        for ancestor in ancestors
-    ]
+    if name == treemap_data['root_name']:
+        ancestors = []
+    else:
+        ancestors = [treemap_data['root_name']] + [
+            _add_name_newlines(ancestor, root_name=treemap_data['root_name'])
+            for ancestor in ancestors
+        ]
 
     # determine unique id
     id = '__'.join(ancestors + [name])
