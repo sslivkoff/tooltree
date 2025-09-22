@@ -65,30 +65,10 @@ def create_treemap_data(
     )
 
     # level nodes
-    children_count: dict[tuple[str], int] = {}
-    skipped = set()
-    sizes: dict[tuple[str], int | float] = {}
-    sizes[()] = treemap_data['total_size']  # type: ignore
+    children_count: dict[tuple[str, ...], int] = {}
+    skipped: set[tuple[str, ...]] = set()
+    sizes: dict[tuple[str, ...], int | float] = {(): treemap_data['total_size']}
     for i, level in enumerate(levels):
-        if i == 0:
-            if max_root_children is None:
-                max_level_children = len(df) * 2
-            else:
-                max_level_children = max_root_children
-            if min_root_child_fraction is None:
-                min_level_child_fraction = 0.0
-            else:
-                min_level_child_fraction = min_root_child_fraction
-        else:
-            if max_children is None:
-                max_level_children = len(df) * 2
-            else:
-                max_level_children = max_children
-            if min_child_fraction is None:
-                min_level_child_fraction = 0.0
-            else:
-                min_level_child_fraction = min_child_fraction
-
         level_data = (
             df.group_by(*levels[: i + 1])
             .agg(*metric_aggs)
@@ -98,13 +78,20 @@ def create_treemap_data(
             ancestors = tuple(entry[level] for level in levels[:i])
 
             # determine whether to skip entry
-            if ancestors in skipped:
-                continue
-            if children_count.get(ancestors, 0) >= max_level_children:
-                skipped.add(ancestors + (entry[level],))
-                continue
-            if (sizes[ancestors] == 0) or (
-                entry[metric] / sizes[ancestors] < min_level_child_fraction
+            if _should_skip_entry(
+                ancestors=ancestors,
+                children_count=children_count,
+                df=df,
+                entry=entry,
+                i=i,
+                level=level,
+                max_children=max_children,
+                max_root_children=max_root_children,
+                metric=metric,
+                min_child_fraction=min_child_fraction,
+                min_root_child_fraction=min_root_child_fraction,
+                sizes=sizes,
+                skipped=skipped,
             ):
                 skipped.add(ancestors + (entry[level],))
                 continue
@@ -126,6 +113,52 @@ def create_treemap_data(
             sizes[ancestors + (entry[level],)] = entry[metric]
 
     return treemap_data
+
+
+def _should_skip_entry(
+    ancestors: tuple[str, ...],
+    entry: dict[str, typing.Any],
+    df: pl.DataFrame,
+    i: int,
+    level: str,
+    metric: str,
+    max_root_children: int | None,
+    min_root_child_fraction: float | None,
+    max_children: int | None,
+    min_child_fraction: float | None,
+    children_count: dict[tuple[str, ...], int],
+    sizes: dict[tuple[str, ...], int | float],
+    skipped: set[tuple[str, ...]],
+) -> bool:
+    if i == 0:
+        if max_root_children is None:
+            max_level_children = len(df) * 2
+        else:
+            max_level_children = max_root_children
+        if min_root_child_fraction is None:
+            min_level_child_fraction = 0.0
+        else:
+            min_level_child_fraction = min_root_child_fraction
+    else:
+        if max_children is None:
+            max_level_children = len(df) * 2
+        else:
+            max_level_children = max_children
+        if min_child_fraction is None:
+            min_level_child_fraction = 0.0
+        else:
+            min_level_child_fraction = min_child_fraction
+
+    # determine whether to skip entry
+    if ancestors in skipped:
+        return True
+    if children_count.get(ancestors, 0) >= max_level_children:
+        return True
+    if (sizes[ancestors] == 0) or (
+        entry[metric] / sizes[ancestors] < min_level_child_fraction
+    ):
+        return True
+    return False
 
 
 def _add_treemap_entry(
