@@ -16,6 +16,8 @@ def create_treemap_data(
     extra_metrics: list[str | pl.Expr] | None = None,
     metric_format: dict[str, typing.Any] | None = None,
     root_name: str = '',
+    max_children: int | None = None,
+    min_child_fraction: float | None = None,
 ) -> types.TreemapData:
     """
     # Inputs
@@ -53,24 +55,57 @@ def create_treemap_data(
     _add_treemap_entry(
         treemap_data=treemap_data,
         name=root_name,
-        ancestors=[],
+        ancestors=None,
         size=treemap_data['total_size'],
         extra_tooltip_kwargs={},
         metric_format=metric_format,
     )
 
     # level nodes
+    children_count: dict[tuple[str], int] = {}
+    skipped = set()
+    sizes: dict[tuple[str], int | float] = {}
     for i, level in enumerate(levels):
-        level_data = df.group_by(*levels[: i + 1]).agg(*metric_aggs)
+        level_data = (
+            df.group_by(*levels[: i + 1])
+            .agg(*metric_aggs)
+            .sort(metric, descending=True)
+        )
         for entry in level_data.to_dicts():
+            ancestors = tuple(entry[level] for level in levels[:i])
+
+            # determine whether to skip entry
+            if ancestors in skipped:
+                continue
+            if (
+                i > 0
+                and max_children is not None
+                and children_count.get(ancestors, 0) >= max_children
+            ):
+                skipped.add(ancestors + (entry[level],))
+                continue
+            if (
+                i > 0
+                and min_child_fraction is not None
+                and entry[metric] / sizes[ancestors] < min_child_fraction
+            ):
+                skipped.add(ancestors + (entry[level],))
+                continue
+
+            # add entry
             _add_treemap_entry(
                 treemap_data=treemap_data,
                 name=entry[level],
-                ancestors=[entry[level] for level in levels[:i]],
+                ancestors=ancestors,
                 size=entry[metric],
                 extra_tooltip_kwargs={n: entry[n] for n in extra_metric_names},
                 metric_format=metric_format,
             )
+
+            # record stats
+            children_count.setdefault(ancestors, 0)
+            children_count[ancestors] += 1
+            sizes[ancestors + (entry[level],)] = entry[metric]
 
     return treemap_data
 
@@ -79,7 +114,7 @@ def _add_treemap_entry(
     treemap_data: types.TreemapData,
     *,
     name: str,
-    ancestors: list[str],
+    ancestors: tuple[str, ...] | None,
     size: int | float,
     extra_tooltip_kwargs: dict[str, typing.Any] | None = None,
     metric_format: dict[str, typing.Any] | None,
@@ -90,16 +125,16 @@ def _add_treemap_entry(
         raise Exception('name is None')
 
     name = _add_name_newlines(name, root_name=treemap_data['root_name'])
-    if name == treemap_data['root_name']:
-        ancestors = []
+    if ancestors is None:
+        ancestors = typing.cast(tuple[str, ...], ())
     else:
-        ancestors = [treemap_data['root_name']] + [
+        ancestors = (treemap_data['root_name'],) + tuple(
             _add_name_newlines(ancestor, root_name=treemap_data['root_name'])
             for ancestor in ancestors
-        ]
+        )
 
     # determine unique id
-    id = '__'.join(ancestors + [name])
+    id = '__'.join(ancestors + (name,))
     parent_id = '__'.join(ancestors)
 
     # create tooltip
