@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import typing
+from . import build
 from . import defaults
 from . import types
 
 if typing.TYPE_CHECKING:
+    import polars as pl
     import plotly.graph_objects as go  # type: ignore
 
 
-def create_figure(
+def create_treemap_figure(
     treemap_data: types.TreemapData,
     *,
     colors: list[str] | None = None,
@@ -27,10 +29,10 @@ def create_figure(
         )
     )
 
-    if colors is not None:
+    if colors is None:
         colors = defaults.default_colors
-    if height is None:
-        height = defaults.default_height
+    # if height is None:
+    #     height = defaults.default_height
 
     fig.update_layout(
         treemapcolorway=colors,
@@ -49,11 +51,4 @@ def create_figure(
         selector=dict(type='treemap'),
     )
 
-
-def show_figure(fig: go.Figure) -> None:
-    fig.show(config={'displayModeBar': False})
-
-
-def export_figure_to_html(fig: go.Figure, path: str) -> None:
-    fig.write_html(path, config={'displayModeBar': False})
-    # fig.write_html(output_path, include_plotlyjs='cdn', full_html=True)
+    return fig
