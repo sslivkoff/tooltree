@@ -20,7 +20,8 @@ def create_treemap_figure(
 
     fig = go.Figure(
         go.Treemap(
-            labels=treemap_data['names'],
+            ids=treemap_data['ids'],
+            labels=treemap_data['labels'],
             parents=treemap_data['parents'],
             values=treemap_data['sizes'],
             customdata=treemap_data['customdata'],

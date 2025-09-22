@@ -26,7 +26,8 @@ def create_treemap_data(
 
     # base treemap data
     treemap_data: types.TreemapData = {
-        'names': [],
+        'ids': [],
+        'labels': [],
         'parents': [],
         'sizes': [],
         'customdata': [],
@@ -93,21 +94,18 @@ def _add_treemap_entry(
     if parent is not None:
         parent = _add_name_newlines(parent, root_name=treemap_data['root_name'])
 
-    # avoid repeating names
-    if name is None:
-        raise Exception(str((name, parent, size)))
-    if parent is not None and name in treemap_data['names']:
-        name = parent + '_' + name
-    if name in treemap_data['names']:
+    # determine unique id
+    id = name
+    if parent is not None and id in treemap_data['ids']:
+        id = parent + '_' + id
+    if id in treemap_data['ids']:
         for i in range(2, 1000):
-            candidate = name + '_' + str(i)
-            if candidate not in treemap_data['names']:
-                name = candidate
+            candidate = id + '_' + str(i)
+            if candidate not in treemap_data['ids']:
+                id = candidate
                 break
         else:
-            raise Exception('could not determine unique name')
-    if '_' in name:
-        print('modified:', name)
+            raise Exception('could not determine unique id for ' + name)
 
     # create tooltip
     item = (
@@ -128,7 +126,8 @@ def _add_treemap_entry(
                 + key
             )
 
-    treemap_data['names'].append(name)
+    treemap_data['ids'].append(id)
+    treemap_data['labels'].append(name)
     treemap_data['parents'].append(parent)
     treemap_data['sizes'].append(size)
     treemap_data['customdata'].append(item)

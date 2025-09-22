@@ -62,11 +62,11 @@ def export_figure_to_html(fig: go.Figure, output_path: str) -> None:
 
 
 def output_figure(
-    fig: go.Figure, output: types.OutputFormat, output_path: str | None
+    fig: go.Figure, output: types.OutputFormat | None, output_path: str | None
 ) -> None:
     if output is None:
         if output_path is not None:
-            output = 'output_path'
+            output = 'html'
         else:
             output = 'show'
     outputs = []
