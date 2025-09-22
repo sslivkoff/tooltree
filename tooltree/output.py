@@ -20,6 +20,7 @@ def plot_treemap(
     metric: str,
     extra_metrics: list[str | pl.Expr] | None = None,
     root_name: str = '',
+    metric_format: dict[str, typing.Any] | None = None,
     #
     # visualization
     colors: list[str] | None = None,
@@ -35,6 +36,7 @@ def plot_treemap(
         levels=levels,
         extra_metrics=extra_metrics,
         root_name=root_name,
+        metric_format=metric_format,
     )
     fig = visualize.create_treemap_figure(
         treemap_data=treemap_data,
