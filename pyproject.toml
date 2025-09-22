@@ -1,0 +1,78 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "tooltree"
+readme = "README.md"
+requires-python = ">=3.9"
+dynamic = ["version", "description"]
+license = {text = "MIT OR Apache-2.0"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = [
+]
+
+[project.urls]
+Documentation = "https://github.com/paradigmxyz/tooltree"
+Source = "https://github.com/paradigmxyz/tooltree"
+
+[tool.flit.module]
+name = "tooltree"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.16.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "types-requests>=2.31.0.6",
+]
+
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+implicit_reexport = true
+files = ["tooltree"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+ignore = ["F401", "F403"]
+
+
+[tool.pyright]
+exclude = [
+  ".venv"
+]
+venvPath = "."
+venv = ".venv"
+reportUnusedCallResult = false
+reportUnknownMemberType = false
+
