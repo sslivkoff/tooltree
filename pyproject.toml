@@ -28,6 +28,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
+    "plotly>=6.3.0",
+    "polars>=1.33.1",
+    "toolstr>=0.9.11",
 ]
 
 [project.urls]
