@@ -29,6 +29,7 @@ def plot_treemap(
     # visualization
     colors: list[str] | None = None,
     height: int | None = None,
+    width: int | None = None,
     #
     # output
     output: types.OutputFormat | None = None,
@@ -50,6 +51,7 @@ def plot_treemap(
     fig = visualize.create_treemap_figure(
         treemap_data=treemap_data,
         height=height,
+        width=width,
         colors=colors,
     )
     output_figure(
@@ -57,6 +59,8 @@ def plot_treemap(
         output=output,
         html_path=html_path,
         png_path=png_path,
+        height=height,
+        width=width,
     )
     print_treemap_stats(treemap_data)
 
@@ -111,6 +115,8 @@ def output_figure(
     output: types.OutputFormat | None,
     html_path: str | None,
     png_path: str | None,
+    height: int | None = None,
+    width: int | None = None,
 ) -> None:
     # determine output format
     outputs = []
@@ -140,4 +146,4 @@ def output_figure(
         if png_path is None:
             raise Exception('set output_path to file path')
         print('writing treemap png to', png_path)
-        export_figure_to_png(fig, png_path=png_path)
+        export_figure_to_png(fig, png_path=png_path, height=height, width=width)

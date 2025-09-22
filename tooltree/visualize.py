@@ -15,6 +15,7 @@ def create_treemap_figure(
     *,
     colors: list[str] | None = None,
     height: int | None = None,
+    width: int | None = None,
 ) -> go.Figure:
     import plotly.graph_objects as go
 
@@ -37,6 +38,7 @@ def create_treemap_figure(
         treemapcolorway=colors,
         margin=dict(l=0, r=0, b=0, t=0),
         height=height,
+        width=width,
     )
 
     fig.update_traces(marker_line_width=0.5)
