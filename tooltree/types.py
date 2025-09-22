@@ -23,4 +23,5 @@ class TreemapData(typing.TypedDict):
 class TreemapPlot(typing.TypedDict):
     data: TreemapData
     fig: go.Figure
-    output_path: str | None
+    html_path: str | None
+    png_path: str | None

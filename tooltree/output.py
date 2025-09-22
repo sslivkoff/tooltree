@@ -32,7 +32,8 @@ def plot_treemap(
     #
     # output
     output: types.OutputFormat | None = None,
-    output_path: str | None = None,
+    html_path: str | None = None,
+    png_path: str | None = None,
 ) -> types.TreemapPlot:
     treemap_data = build.create_treemap_data(
         df,
@@ -54,46 +55,89 @@ def plot_treemap(
     output_figure(
         fig=fig,
         output=output,
-        output_path=output_path,
+        html_path=html_path,
+        png_path=png_path,
     )
+    print_treemap_stats(treemap_data)
 
     return {
         'data': treemap_data,
         'fig': fig,
-        'output_path': output_path,
+        'html_path': html_path,
+        'png_path': png_path,
     }
+
+
+def print_treemap_stats(treemap_data: types.TreemapData) -> None:
+    pass
 
 
 def show_figure(fig: go.Figure) -> None:
     fig.show(config={'displayModeBar': False})
 
 
-def export_figure_to_html(fig: go.Figure, output_path: str) -> None:
-    fig.write_html(output_path, config={'displayModeBar': False})
+def export_figure_to_html(fig: go.Figure, html_path: str) -> None:
+    import os
+
+    os.makedirs(os.path.dirname(html_path), exist_ok=True)
+    fig.write_html(html_path, config={'displayModeBar': False})
     # fig.write_html(output_path, include_plotlyjs='cdn', full_html=True)
 
 
-def output_figure(
-    fig: go.Figure, output: types.OutputFormat | None, output_path: str | None
+def export_figure_to_png(
+    fig: go.Figure,
+    png_path: str,
+    scale: int = 4,
+    height: int | None = None,
+    width: int | None = None,
 ) -> None:
-    if output is None:
-        if output_path is not None:
-            output = 'html'
-        else:
-            output = 'show'
+    import os
+
+    os.makedirs(os.path.dirname(png_path), exist_ok=True)
+
+    if height is None:
+        height = defaults.default_png_height
+    if width is None:
+        width = defaults.default_png_width
+    if scale is None:
+        scale = defaults.default_png_scale
+    fig.write_image(
+        png_path, format='png', scale=scale, width=width, height=height
+    )
+
+
+def output_figure(
+    fig: go.Figure,
+    output: types.OutputFormat | None,
+    html_path: str | None,
+    png_path: str | None,
+) -> None:
+    # determine output format
     outputs = []
-    if output == 'show':
-        outputs.append('show')
-    elif output == 'html':
-        outputs.append('html')
+    if output is None:
+        if html_path is not None:
+            outputs.append('html')
+        if png_path is not None:
+            outputs.append('png')
+        if len(outputs) == 0:
+            outputs.append('show')
+    if output in ['show', 'png', 'html']:
+        outputs.append(output)
     elif isinstance(output, list):
         outputs = output
-    else:
+    elif len(outputs) == 0:
         raise Exception('invalid output')
+
+    # create outputs
     if 'show' in outputs:
         show_figure(fig)
     if 'html' in outputs:
-        if output_path is None:
+        if html_path is None:
+            raise Exception('set html_path to file path')
+        print('writing treemap html to', html_path)
+        export_figure_to_html(fig, html_path=html_path)
+    if 'png' in outputs:
+        if png_path is None:
             raise Exception('set output_path to file path')
-        print('writing treemap output to', output_path)
-        export_figure_to_html(fig, output_path=output_path)
+        print('writing treemap png to', png_path)
+        export_figure_to_png(fig, png_path=png_path)
