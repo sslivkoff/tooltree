@@ -40,6 +40,8 @@ def plot_treemap(
     )
     fig = visualize.create_treemap_figure(
         treemap_data=treemap_data,
+        height=height,
+        colors=colors,
     )
     output_figure(
         fig=fig,
