@@ -14,5 +14,3 @@ default_colors = [
     '#E86100',
     '#F2C1D1',
 ]
-
-default_height = 700

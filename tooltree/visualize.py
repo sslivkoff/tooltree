@@ -32,8 +32,6 @@ def create_treemap_figure(
 
     if colors is None:
         colors = defaults.default_colors
-    # if height is None:
-    #     height = defaults.default_height
 
     fig.update_layout(
         treemapcolorway=colors,
