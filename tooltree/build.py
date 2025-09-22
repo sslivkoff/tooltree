@@ -84,10 +84,12 @@ def create_treemap_data(
             ):
                 skipped.add(ancestors + (entry[level],))
                 continue
-            if (
-                i > 0
-                and min_child_fraction is not None
-                and entry[metric] / sizes[ancestors] < min_child_fraction
+            if i > 0 and (
+                (sizes[ancestors] == 0)
+                or (
+                    min_child_fraction is not None
+                    and entry[metric] / sizes[ancestors] < min_child_fraction
+                )
             ):
                 skipped.add(ancestors + (entry[level],))
                 continue
