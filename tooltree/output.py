@@ -23,6 +23,8 @@ def plot_treemap(
     metric_format: dict[str, typing.Any] | None = None,
     max_children: int | None = None,
     min_child_fraction: float | None = None,
+    max_root_children: int | None = None,
+    min_root_child_fraction: float | None = None,
     #
     # visualization
     colors: list[str] | None = None,
@@ -41,6 +43,8 @@ def plot_treemap(
         metric_format=metric_format,
         max_children=max_children,
         min_child_fraction=min_child_fraction,
+        max_root_children=max_root_children,
+        min_root_child_fraction=min_root_child_fraction,
     )
     fig = visualize.create_treemap_figure(
         treemap_data=treemap_data,

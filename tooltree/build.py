@@ -18,6 +18,8 @@ def create_treemap_data(
     root: str = '',
     max_children: int | None = None,
     min_child_fraction: float | None = None,
+    max_root_children: int | None = None,
+    min_root_child_fraction: float | None = None,
 ) -> types.TreemapData:
     """
     # Inputs
@@ -65,7 +67,27 @@ def create_treemap_data(
     children_count: dict[tuple[str], int] = {}
     skipped = set()
     sizes: dict[tuple[str], int | float] = {}
+    sizes[()] = treemap_data['total_size']  # type: ignore
     for i, level in enumerate(levels):
+        if i == 0:
+            if max_root_children is None:
+                max_level_children = len(df) * 2
+            else:
+                max_level_children = max_root_children
+            if min_root_child_fraction is None:
+                min_level_child_fraction = 0.0
+            else:
+                min_level_child_fraction = min_root_child_fraction
+        else:
+            if max_children is None:
+                max_level_children = len(df) * 2
+            else:
+                max_level_children = max_children
+            if min_child_fraction is None:
+                min_level_child_fraction = 0.0
+            else:
+                min_level_child_fraction = min_child_fraction
+
         level_data = (
             df.group_by(*levels[: i + 1])
             .agg(*metric_aggs)
@@ -77,19 +99,11 @@ def create_treemap_data(
             # determine whether to skip entry
             if ancestors in skipped:
                 continue
-            if (
-                i > 0
-                and max_children is not None
-                and children_count.get(ancestors, 0) >= max_children
-            ):
+            if children_count.get(ancestors, 0) >= max_level_children:
                 skipped.add(ancestors + (entry[level],))
                 continue
-            if i > 0 and (
-                (sizes[ancestors] == 0)
-                or (
-                    min_child_fraction is not None
-                    and entry[metric] / sizes[ancestors] < min_child_fraction
-                )
+            if (sizes[ancestors] == 0) or (
+                entry[metric] / sizes[ancestors] < min_level_child_fraction
             ):
                 skipped.add(ancestors + (entry[level],))
                 continue
