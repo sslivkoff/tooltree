@@ -15,7 +15,7 @@ def create_treemap_data(
     metric: str,
     extra_metrics: list[str | pl.Expr] | None = None,
     metric_format: dict[str, typing.Any] | None = None,
-    root_name: str = '',
+    root: str = '',
     max_children: int | None = None,
     min_child_fraction: float | None = None,
 ) -> types.TreemapData:
@@ -36,7 +36,7 @@ def create_treemap_data(
         'customdata': [],
         'total_size': df[metric].sum(),
         'metric': metric,
-        'root_name': root_name,
+        'root': root,
     }
 
     # metric aggregations
@@ -54,7 +54,7 @@ def create_treemap_data(
     # root node
     _add_treemap_entry(
         treemap_data=treemap_data,
-        name=root_name,
+        name=root,
         ancestors=None,
         size=treemap_data['total_size'],
         extra_tooltip_kwargs={},
@@ -124,12 +124,12 @@ def _add_treemap_entry(
     if name is None:
         raise Exception('name is None')
 
-    name = _add_name_newlines(name, root_name=treemap_data['root_name'])
+    name = _add_name_newlines(name, root=treemap_data['root'])
     if ancestors is None:
         ancestors = typing.cast(tuple[str, ...], ())
     else:
-        ancestors = (treemap_data['root_name'],) + tuple(
-            _add_name_newlines(ancestor, root_name=treemap_data['root_name'])
+        ancestors = (treemap_data['root'],) + tuple(
+            _add_name_newlines(ancestor, root=treemap_data['root'])
             for ancestor in ancestors
         )
 
@@ -165,9 +165,9 @@ def _add_treemap_entry(
     treemap_data['customdata'].append(item)
 
 
-def _add_name_newlines(name: str, root_name: str) -> str:
+def _add_name_newlines(name: str, root: str) -> str:
     newline_exceptions: list[str] = []
-    if name == root_name:
+    if name == root:
         return name
     if len(name) > 8 and name not in newline_exceptions:
         name = name.replace(' ', '<br>')

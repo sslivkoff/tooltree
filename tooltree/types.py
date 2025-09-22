@@ -11,7 +11,7 @@ OutputFormat = typing.Literal['show', 'html']
 
 class TreemapData(typing.TypedDict):
     metric: str
-    root_name: str
+    root: str
     total_size: int | float
     ids: list[str]
     labels: list[str]
