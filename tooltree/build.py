@@ -58,6 +58,7 @@ def create_treemap_data(
         treemap_data=treemap_data,
         name=root,
         ancestors=None,
+        parent_size=None,
         size=treemap_data['total_size'],
         extra_tooltip_kwargs={},
         metric_format=metric_format,
@@ -113,6 +114,7 @@ def create_treemap_data(
                 treemap_data=treemap_data,
                 name=entry[level],
                 ancestors=ancestors,
+                parent_size=sizes[ancestors],
                 size=entry[metric],
                 extra_tooltip_kwargs={n: entry[n] for n in extra_metric_names},
                 metric_format=metric_format,
@@ -131,8 +133,9 @@ def _add_treemap_entry(
     *,
     name: str,
     ancestors: tuple[str, ...] | None,
+    parent_size: int | float | None,
     size: int | float,
-    extra_tooltip_kwargs: dict[str, typing.Any] | None = None,
+    extra_tooltip_kwargs: dict[str, typing.Any] | None,
     metric_format: dict[str, typing.Any] | None,
 ) -> None:
     import toolstr
@@ -165,6 +168,17 @@ def _add_treemap_entry(
         + ' of '
         + treemap_data['metric']
     )
+
+    # add in parent
+    if len(ancestors) > 1 and parent_size is not None:
+        item += (
+            '<br>'
+            + toolstr.format(size / parent_size, percentage=True, decimals=1)
+            + ' of '
+            + ancestors[-1]
+        )
+
+    # extra tooltip info
     if extra_tooltip_kwargs is not None:
         for key, value in extra_tooltip_kwargs.items():
             item += (
