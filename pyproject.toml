@@ -34,8 +34,8 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/paradigmxyz/tooltree"
-Source = "https://github.com/paradigmxyz/tooltree"
+Documentation = "https://github.com/sslivkoff/tooltree"
+Source = "https://github.com/sslivkoff/tooltree"
 
 [tool.flit.module]
 name = "tooltree"
