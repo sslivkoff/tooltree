@@ -16,8 +16,24 @@ def create_treemap_figure(
     colors: list[str] | None = None,
     height: int | None = None,
     width: int | None = None,
+    max_depth: int | None = None,
+    treemap_object_kwargs: dict[str, typing.Any] | None = None,
+    layout_kwargs: dict[str, typing.Any] | None = None,
+    trace_kwargs: dict[str, typing.Any] | None = None,
 ) -> go.Figure:
     import plotly.graph_objects as go
+
+    if treemap_object_kwargs is None:
+        treemap_object_kwargs = {}
+    for key, value in {'maxdepth': max_depth}.items():
+        if key in treemap_object_kwargs and value is not None:
+            raise ValueError(
+                f'{key} specified in both arguments and treemap_object_kwargs'
+            )
+        treemap_object_kwargs[key] = value
+    treemap_object_kwargs.setdefault(
+        'textfont', dict(family='monospace', size=20)
+    )
 
     fig = go.Figure(
         go.Treemap(
@@ -26,8 +42,8 @@ def create_treemap_figure(
             parents=treemap_data['parents'],
             values=treemap_data['sizes'],
             customdata=treemap_data['customdata'],
-            textfont=dict(family='monospace', size=20),
             branchvalues='total',
+            **treemap_object_kwargs,
         )
     )
 
@@ -51,5 +67,9 @@ def create_treemap_figure(
         marker_pad={'l': 5, 'b': 5, 't': 30, 'r': 5},
         selector=dict(type='treemap'),
     )
+    if layout_kwargs is not None:
+        fig.update_layout(**layout_kwargs)
+    if trace_kwargs is not None:
+        fig.update_traces(**trace_kwargs)
 
     return fig

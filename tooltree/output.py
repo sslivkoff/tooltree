@@ -30,6 +30,10 @@ def plot_treemap(
     colors: list[str] | None = None,
     height: int | None = None,
     width: int | None = None,
+    max_depth: int | None = None,
+    treemap_object_kwargs: dict[str, typing.Any] | None = None,
+    trace_kwargs: dict[str, typing.Any] | None = None,
+    layout_kwargs: dict[str, typing.Any] | None = None,
     #
     # output
     output: types.OutputFormat | None = None,
@@ -53,6 +57,10 @@ def plot_treemap(
         height=height,
         width=width,
         colors=colors,
+        max_depth=max_depth,
+        treemap_object_kwargs=treemap_object_kwargs,
+        trace_kwargs=trace_kwargs,
+        layout_kwargs=layout_kwargs,
     )
     output_figure(
         fig=fig,
