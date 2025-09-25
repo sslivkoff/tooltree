@@ -29,6 +29,10 @@ def create_treemap_data(
     """
     import polars as pl
 
+    # check inputs
+    if len(df.filter(pl.col(metric) < 0)) > 0:
+        raise Exception('metric column contains negative values')
+
     # base treemap data
     treemap_data: types.TreemapData = {
         'ids': [],
