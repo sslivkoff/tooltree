@@ -196,7 +196,7 @@ def _add_treemap_entry(
     # create tooltip
     if metric_format is None:
         metric_format = {}
-    item = (
+    customdata = (
         toolstr.format(size, **metric_format)
         + '<br>'
         + toolstr.format(
@@ -208,7 +208,7 @@ def _add_treemap_entry(
 
     # add in parent
     if len(ancestors) > 1 and parent_size is not None:
-        item += (
+        customdata += (
             '<br>'
             + toolstr.format(size / parent_size, percentage=True, decimals=1)
             + ' of '
@@ -218,18 +218,19 @@ def _add_treemap_entry(
     # extra tooltip info
     if extra_tooltip_kwargs is not None:
         for key, value in extra_tooltip_kwargs.items():
-            item += (
+            customdata += (
                 '<br>'
                 + toolstr.format(value, order_of_magnitude=True, decimals=1)
                 + ' '
                 + key
             )
+    customdata = '<b>' + name.replace('<br>', ' ') + '</b><br>' + customdata
 
     treemap_data['ids'].append(id)
     treemap_data['labels'].append(name)
     treemap_data['parents'].append(parent_id)
     treemap_data['sizes'].append(size)
-    treemap_data['customdata'].append(item)
+    treemap_data['customdata'].append(customdata)
 
 
 def _add_name_newlines(name: str, root: str) -> str:

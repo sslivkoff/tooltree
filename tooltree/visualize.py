@@ -60,7 +60,7 @@ def create_treemap_figure(
     fig.update_traces(marker_line_width=0.5)
     fig.update_traces(
         textposition='middle center',
-        hovertemplate='<b>%{label}</b><br>%{customdata}<extra></extra>',
+        hovertemplate='%{customdata}<extra></extra>',
         hoverlabel={'font': {'size': 22, 'family': 'Monospace'}},
     )
     fig.update_traces(
