@@ -36,7 +36,7 @@ def plot_treemap(
     layout_kwargs: dict[str, typing.Any] | None = None,
     #
     # output
-    output: types.OutputFormat | None = None,
+    show: bool | None = None,
     html_path: str | None = None,
     png_path: str | None = None,
 ) -> types.TreemapPlot:
@@ -62,14 +62,24 @@ def plot_treemap(
         trace_kwargs=trace_kwargs,
         layout_kwargs=layout_kwargs,
     )
-    output_figure(
-        fig=fig,
-        output=output,
-        html_path=html_path,
-        png_path=png_path,
-        height=height,
-        width=width,
-    )
+
+    # output figure
+    if show is None:
+        show = html_path is None and png_path is None
+    if show:
+        show_figure(fig)
+    if html_path is not None:
+        if html_path is None:
+            raise Exception('set html_path to file path')
+        print('writing treemap html to', html_path)
+        export_figure_to_html(fig, html_path=html_path)
+    if png_path is not None:
+        if png_path is None:
+            raise Exception('set output_path to file path')
+        print('writing treemap png to', png_path)
+        export_figure_to_png(fig, png_path=png_path, height=height, width=width)
+
+    # print summary
     print_treemap_stats(treemap_data)
 
     return {
@@ -116,42 +126,3 @@ def export_figure_to_png(
     fig.write_image(
         png_path, format='png', scale=scale, width=width, height=height
     )
-
-
-def output_figure(
-    fig: go.Figure,
-    output: types.OutputFormat | None,
-    html_path: str | None,
-    png_path: str | None,
-    height: int | None = None,
-    width: int | None = None,
-) -> None:
-    # determine output format
-    outputs = []
-    if output is None:
-        if html_path is not None:
-            outputs.append('html')
-        if png_path is not None:
-            outputs.append('png')
-        if len(outputs) == 0:
-            outputs.append('show')
-    if output in ['show', 'png', 'html']:
-        outputs.append(output)
-    elif isinstance(output, list):
-        outputs = output
-    elif len(outputs) == 0:
-        raise Exception('invalid output')
-
-    # create outputs
-    if 'show' in outputs:
-        show_figure(fig)
-    if 'html' in outputs:
-        if html_path is None:
-            raise Exception('set html_path to file path')
-        print('writing treemap html to', html_path)
-        export_figure_to_html(fig, html_path=html_path)
-    if 'png' in outputs:
-        if png_path is None:
-            raise Exception('set output_path to file path')
-        print('writing treemap png to', png_path)
-        export_figure_to_png(fig, png_path=png_path, height=height, width=width)
