@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import typing
-from . import build
-from . import defaults
+from . import colors
 from . import types
 
 if typing.TYPE_CHECKING:
@@ -33,7 +32,7 @@ def create_treemap_figure(
     import plotly.graph_objects as go
 
     # get color kwargs
-    treemap_color_kwargs, layout_color_kwargs = _get_color_kwargs(
+    treemap_color_kwargs, layout_color_kwargs = colors._get_color_kwargs(
         treemap_data=treemap_data,
         color_branches=color_branches,
         color_nodes=color_nodes,
@@ -92,87 +91,3 @@ def create_treemap_figure(
         fig.update_traces(**trace_kwargs)
 
     return fig
-
-
-def _get_color_kwargs(
-    treemap_data: types.TreemapData,
-    color_branches: list[str] | dict[str, str] | None = None,
-    color_nodes: str
-    | typing.Mapping[str | tuple[str, ...], typing.Any]
-    | None = None,
-    color_root: str | None = None,
-    cmap: str | None = None,
-    cmin: int | float | None = None,
-    cmid: int | float | None = None,
-    cmax: int | float | None = None,
-    color_bar: bool = False,
-) -> tuple[dict[str, typing.Any], dict[str, typing.Any]]:
-    """
-    Specifying color:
-    1. color_branches=list[str] | list[int]
-        - list of colors for main branches, sorted by decreasing size
-        - if String type, use as is
-        - if Numerical type, use continuous color scale
-    2. color_branches=dist[str, str]
-        - map from branch name to color, root branches only
-    3. color_nodes=list[str] | list[int] | list[float] | pl.Series
-        - list of colors for each node, same length as number of nodes
-        - if String type, use as is
-        - if Numerical type, use continuous color scale
-    4. color_nodes=dict[str, str] | dict[str, int] | dict[str, float]
-        - map from node name to color
-        - if values are String type, use as is
-        - if values are Numerical type, use continuous color scale
-    5. color_nodes=str
-        - column name of node color values
-        - if column has String dtype, use as is
-        - if column has Numerical dtype, use continuous color scale
-    """
-    import polars as pl
-
-    treemap_color_kwargs: dict[str, typing.Any] = {'root_color': color_root}
-    layout_color_kwargs: dict[str, typing.Any] = {}
-    use_color_scale = False
-
-    # set defaults
-    if color_branches is None and color_nodes is None:
-        color_branches = defaults.default_branch_colors
-
-    # determine color mode
-    ids = treemap_data['ids']
-    parents = treemap_data['parents']
-    root = treemap_data['root']
-    if color_branches is not None:
-        if isinstance(color_branches, (list, pl.Series)):
-            layout_color_kwargs['treemapcolorway'] = color_branches
-        elif isinstance(color_branches, dict):
-            layout_color_kwargs['treemapcolorway'] = [
-                color_branches.get(node_id, 'lightgrey')
-                for node_id, parent in zip(ids, parents)
-                if parent == root
-            ]
-        else:
-            raise Exception('color_branches must be list or dict or None')
-        if len(layout_color_kwargs['treemapcolorway']) > 0:
-            use_color_scale = isinstance(
-                layout_color_kwargs['treemapcolorway'][0], (int, float)
-            )
-    elif color_nodes is not None:
-        treemap_color_kwargs['marker_colors'] = treemap_data['node_colors']
-        if treemap_color_kwargs['marker_colors'] is None:
-            raise ValueError('color_nodes column not found in treemap_data')
-        if len(treemap_color_kwargs['marker_colors']) > 0:
-            use_color_scale = isinstance(
-                treemap_color_kwargs['marker_colors'][0], (int, float)
-            )
-    else:
-        raise Exception()
-
-    if use_color_scale:
-        treemap_color_kwargs['marker_colorscale'] = cmap
-        treemap_color_kwargs['marker_cmin'] = cmin
-        treemap_color_kwargs['marker_cmid'] = cmid
-        treemap_color_kwargs['marker_cmax'] = cmax
-        treemap_color_kwargs['marker_colorbar'] = color_bar
-
-    return treemap_color_kwargs, layout_color_kwargs

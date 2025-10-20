@@ -7,6 +7,7 @@ from . import types
 from . import visualize
 
 if typing.TYPE_CHECKING:
+    from typing import Mapping
     import polars as pl
     import plotly.graph_objects as go  # type: ignore
 
@@ -34,9 +35,7 @@ def plot_treemap(
     trace_kwargs: dict[str, typing.Any] | None = None,
     layout_kwargs: dict[str, typing.Any] | None = None,
     color_branches: list[str] | dict[str, str] | None = None,
-    color_nodes: str
-    | typing.Mapping[str | tuple[str, ...], typing.Any]
-    | None = None,
+    color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
     color_agg: pl.Expr | None = None,
     color_root: str | None = None,
     cmap: str | None = None,
@@ -50,6 +49,20 @@ def plot_treemap(
     html_path: str | None = None,
     png_path: str | None = None,
 ) -> types.TreemapPlot:
+    """
+    Specifying color:
+    - [Color: str | int | float]
+        - if numerical, use color scale
+        - if str, interpret as color (e.g. 'red', '#ff0000', 'rgb(255, 0, 0)')
+    1. color_branches: list[Color | None]
+        - list of colors for toplevel branches
+    2. color_branches: dict[str, Color | None]
+        - map from branch name to color, root branches only
+    3. color_nodes: str
+        - column name of node color values
+    4. color_nodes: dict[str | tuple[str, ...], Color | None]
+        - map from node name to color
+    """
     treemap_data = build.create_treemap_data(
         df,
         metric=metric,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing
 
+from . import colors
 from . import types
 
 if typing.TYPE_CHECKING:
@@ -217,7 +218,7 @@ def _add_treemap_entry(
     )
 
     # compute color value
-    color_value = _get_color_value(
+    color_value = colors._get_node_color(
         ancestors=ancestors,
         level=level,
         entry=entry,
@@ -295,27 +296,3 @@ def _create_tooltip(
             tooltip += '<br>' + value_formatted + ' ' + extra_metric_name
 
     return tooltip
-
-
-def _get_color_value(
-    ancestors: tuple[str, ...] | None,
-    level: str | None,
-    entry: dict[str, typing.Any] | None,
-    color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None,
-) -> str | int | float | None:
-    if entry is not None and level is not None and ancestors is not None:
-        if isinstance(color_nodes, str):
-            return entry.get(color_nodes)
-        elif isinstance(color_nodes, dict):
-            if entry[level] in color_nodes:
-                return color_nodes[entry[level]]  # type: ignore
-            elif ancestors in color_nodes:
-                return color_nodes[ancestors]  # type: ignore
-            else:
-                return None
-        elif color_nodes is None:
-            return None
-        else:
-            raise Exception('invalid color_nodes: ' + str(color_nodes))
-    else:
-        return None
