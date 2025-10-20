@@ -27,13 +27,23 @@ def plot_treemap(
     min_root_child_fraction: float | None = None,
     #
     # visualization
-    colors: list[str] | None = None,
     height: int | None = None,
     width: int | None = None,
     max_depth: int | None = None,
     treemap_object_kwargs: dict[str, typing.Any] | None = None,
     trace_kwargs: dict[str, typing.Any] | None = None,
     layout_kwargs: dict[str, typing.Any] | None = None,
+    color_branches: list[str] | dict[str, str] | None = None,
+    color_nodes: str
+    | typing.Mapping[str | tuple[str, ...], typing.Any]
+    | None = None,
+    color_agg: pl.Expr | None = None,
+    color_root: str | None = None,
+    cmap: str | None = None,
+    cmin: int | float | None = None,
+    cmid: int | float | None = None,
+    cmax: int | float | None = None,
+    color_bar: bool = False,
     #
     # output
     show: bool | None = None,
@@ -51,16 +61,25 @@ def plot_treemap(
         min_child_fraction=min_child_fraction,
         max_root_children=max_root_children,
         min_root_child_fraction=min_root_child_fraction,
+        color_nodes=color_nodes,
+        color_agg=color_agg,
     )
     fig = visualize.create_treemap_figure(
         treemap_data=treemap_data,
         height=height,
         width=width,
-        colors=colors,
         max_depth=max_depth,
         treemap_object_kwargs=treemap_object_kwargs,
         trace_kwargs=trace_kwargs,
         layout_kwargs=layout_kwargs,
+        color_branches=color_branches,
+        color_nodes=color_nodes,
+        color_root=color_root,
+        cmap=cmap,
+        cmin=cmin,
+        cmid=cmid,
+        cmax=cmax,
+        color_bar=color_bar,
     )
 
     # output figure

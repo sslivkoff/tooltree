@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-default_colors = [
+default_branch_colors = [
     'limegreen',
     'dodgerblue',
     'orange',

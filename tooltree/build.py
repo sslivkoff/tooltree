@@ -6,6 +6,7 @@ from . import types
 
 if typing.TYPE_CHECKING:
     import polars as pl
+    from typing import Mapping
 
 
 def create_treemap_data(
@@ -20,13 +21,9 @@ def create_treemap_data(
     min_child_fraction: float | None = None,
     max_root_children: int | None = None,
     min_root_child_fraction: float | None = None,
+    color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
+    color_agg: pl.Expr | None = None,
 ) -> types.TreemapData:
-    """
-    # Inputs
-    - df: dataframe containing data to visualize
-    - metric: column name to use for sizing
-    - levels: list of column names to group by, in order of hierarchy
-    """
     import polars as pl
 
     # check inputs
@@ -43,19 +40,8 @@ def create_treemap_data(
         'total_size': df[metric].sum(),
         'metric': metric,
         'root': root,
+        'node_colors': [] if color_nodes is not None else None,
     }
-
-    # metric aggregations
-    metric_aggs = []
-    for extra_metric in extra_metrics or []:
-        if isinstance(extra_metric, str):
-            metric_aggs.append(pl.col(extra_metric).sum())
-        elif isinstance(extra_metric, pl.Expr):
-            metric_aggs.append(extra_metric)
-        else:
-            raise Exception('invalid extra_metric: ' + str(extra_metric))
-    extra_metric_names = [expr.meta.output_name() for expr in metric_aggs]
-    metric_aggs.append(pl.col(metric).sum().alias(metric))
 
     # root node
     _add_treemap_entry(
@@ -64,31 +50,32 @@ def create_treemap_data(
         ancestors=None,
         parent_size=None,
         size=treemap_data['total_size'],
-        extra_tooltip_kwargs={},
         metric_format=metric_format,
+        entry=None,
+        level=None,
+        color_nodes=None,
+        extra_metrics=None,
     )
 
     # level nodes
     children_count: dict[tuple[str, ...], int] = {}
     skipped: set[tuple[str, ...]] = set()
     sizes: dict[tuple[str, ...], int | float] = {(): treemap_data['total_size']}
+    metric_aggs = _get_metric_agg(metric, extra_metrics, color_nodes, color_agg)
     for i, level in enumerate(levels):
         level_data = (
             df.group_by(*levels[: i + 1])
-            .agg(*metric_aggs)
+            .agg(**metric_aggs)
             .sort(metric, descending=True)
         )
         for entry in level_data.to_dicts():
             ancestors = tuple(entry[level] for level in levels[:i])
-
-            # determine whether to skip entry
             if _should_skip_entry(
                 ancestors=ancestors,
                 children_count=children_count,
                 df=df,
                 entry=entry,
                 i=i,
-                level=level,
                 max_children=max_children,
                 max_root_children=max_root_children,
                 metric=metric,
@@ -98,25 +85,51 @@ def create_treemap_data(
                 skipped=skipped,
             ):
                 skipped.add(ancestors + (entry[level],))
-                continue
-
-            # add entry
-            _add_treemap_entry(
-                treemap_data=treemap_data,
-                name=entry[level],
-                ancestors=ancestors,
-                parent_size=sizes[ancestors],
-                size=entry[metric],
-                extra_tooltip_kwargs={n: entry[n] for n in extra_metric_names},
-                metric_format=metric_format,
-            )
-
-            # record stats
-            children_count.setdefault(ancestors, 0)
-            children_count[ancestors] += 1
-            sizes[ancestors + (entry[level],)] = entry[metric]
+            else:
+                _add_treemap_entry(
+                    treemap_data=treemap_data,
+                    name=entry[level],
+                    ancestors=ancestors,
+                    parent_size=sizes[ancestors],
+                    size=entry[metric],
+                    metric_format=metric_format,
+                    entry=entry,
+                    level=level,
+                    color_nodes=color_nodes,
+                    extra_metrics=extra_metrics,
+                )
+                children_count.setdefault(ancestors, 0)
+                children_count[ancestors] += 1
+                sizes[ancestors + (entry[level],)] = entry[metric]
 
     return treemap_data
+
+
+def _get_metric_agg(
+    metric: str,
+    extra_metrics: list[str | pl.Expr] | None = None,
+    color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
+    color_agg: pl.Expr | None = None,
+) -> dict[str, pl.Expr]:
+    import polars as pl
+
+    metric_aggs = {}
+    for extra_metric in extra_metrics or []:
+        if isinstance(extra_metric, str):
+            metric_aggs[extra_metric] = pl.col(extra_metric).sum()
+        elif isinstance(extra_metric, pl.Expr):
+            metric_aggs[extra_metric.meta.output_name()] = extra_metric
+        else:
+            raise Exception('invalid extra_metric: ' + str(extra_metric))
+    metric_aggs[metric] = pl.col(metric).sum()
+    if isinstance(color_nodes, str) and color_nodes not in metric_aggs:
+        if color_agg is not None:
+            metric_aggs[color_nodes] = color_agg
+        else:
+            raise Exception(
+                'if using custom color column, specify color_agg expr'
+            )
+    return metric_aggs
 
 
 def _should_skip_entry(
@@ -124,7 +137,6 @@ def _should_skip_entry(
     entry: dict[str, typing.Any],
     df: pl.DataFrame,
     i: int,
-    level: str,
     metric: str,
     max_root_children: int | None,
     min_root_child_fraction: float | None,
@@ -172,15 +184,13 @@ def _add_treemap_entry(
     ancestors: tuple[str, ...] | None,
     parent_size: int | float | None,
     size: int | float,
-    extra_tooltip_kwargs: dict[str, typing.Any] | None,
     metric_format: dict[str, typing.Any] | None,
+    level: str | None,
+    entry: dict[str, typing.Any] | None,
+    color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None,
+    extra_metrics: list[str | pl.Expr] | None = None,
 ) -> None:
-    import toolstr
-
-    if name is None:
-        raise Exception('name is None')
-
-    name = _add_name_newlines(name, root=treemap_data['root'])
+    # compute ancestors
     if ancestors is None:
         ancestors = typing.cast(tuple[str, ...], ())
     else:
@@ -189,51 +199,44 @@ def _add_treemap_entry(
             for ancestor in ancestors
         )
 
-    # determine unique id
+    # compute identifiers
+    name = _add_name_newlines(name, root=treemap_data['root'])
     id = '__'.join(ancestors + (name,))
     parent_id = '__'.join(ancestors)
 
     # create tooltip
-    if metric_format is None:
-        metric_format = {}
-    customdata = (
-        toolstr.format(size, **metric_format)
-        + '<br>'
-        + toolstr.format(
-            size / treemap_data['total_size'], percentage=True, decimals=1
-        )
-        + ' of '
-        + treemap_data['metric']
+    tooltip = _create_tooltip(
+        name=name,
+        ancestors=ancestors,
+        parent_size=parent_size,
+        size=size,
+        treemap_data=treemap_data,
+        metric_format=metric_format,
+        entry=entry,
+        extra_metrics=extra_metrics,
     )
 
-    # add in parent
-    if len(ancestors) > 1 and parent_size is not None:
-        customdata += (
-            '<br>'
-            + toolstr.format(size / parent_size, percentage=True, decimals=1)
-            + ' of '
-            + ancestors[-1]
-        )
+    # compute color value
+    color_value = _get_color_value(
+        ancestors=ancestors,
+        level=level,
+        entry=entry,
+        color_nodes=color_nodes,
+    )
 
-    # extra tooltip info
-    if extra_tooltip_kwargs is not None:
-        for key, value in extra_tooltip_kwargs.items():
-            customdata += (
-                '<br>'
-                + toolstr.format(value, order_of_magnitude=True, decimals=1)
-                + ' '
-                + key
-            )
-    customdata = '<b>' + name.replace('<br>', ' ') + '</b><br>' + customdata
-
-    treemap_data['ids'].append(id)
+    # add to treemap data
     treemap_data['labels'].append(name)
+    treemap_data['ids'].append(id)
     treemap_data['parents'].append(parent_id)
     treemap_data['sizes'].append(size)
-    treemap_data['customdata'].append(customdata)
+    treemap_data['customdata'].append(tooltip)
+    if treemap_data['node_colors'] is not None:
+        treemap_data['node_colors'].append(color_value)
 
 
 def _add_name_newlines(name: str, root: str) -> str:
+    if name is None:
+        raise Exception('name is None')
     newline_exceptions: list[str] = []
     if name == root:
         return name
@@ -242,3 +245,77 @@ def _add_name_newlines(name: str, root: str) -> str:
     if '<br>V' in name:
         name = name.replace('<br>V', ' V')
     return name
+
+
+def _create_tooltip(
+    name: str,
+    ancestors: tuple[str, ...],
+    parent_size: int | float | None,
+    size: int | float,
+    treemap_data: types.TreemapData,
+    metric_format: dict[str, typing.Any] | None,
+    entry: dict[str, typing.Any] | None,
+    extra_metrics: list[str | pl.Expr] | None = None,
+) -> str:
+    import toolstr
+
+    tooltip = '<b>' + name.replace('<br>', ' ') + '</b>'
+
+    # add size to tooltip
+    if metric_format is None:
+        metric_format = {}
+    tooltip += toolstr.format(size, **metric_format)
+
+    # add percentage to tooltip
+    fraction = size / treemap_data['total_size']
+    fraction_str = toolstr.format(fraction, percentage=True, decimals=1)
+    tooltip += '<br>' + fraction_str + ' of ' + treemap_data['metric']
+
+    # add parent percentage to tooltip
+    if len(ancestors) > 1 and parent_size is not None:
+        as_str = toolstr.format(size / parent_size, percentage=True, decimals=1)
+        tooltip += '<br>' + as_str + ' of ' + ancestors[-1]
+
+    # add extra tooltip info
+    if extra_metrics is not None and entry is not None:
+        for column in extra_metrics:
+            if isinstance(column, pl.Expr):
+                extra_metric_name = column.meta.output_name()
+            else:
+                extra_metric_name = column
+            if extra_metric_name not in entry:
+                raise Exception(
+                    f'extra_metric "{extra_metric_name}" not found in entry'
+                )
+            value_formatted = toolstr.format(
+                entry[extra_metric_name],
+                order_of_magnitude=True,
+                decimals=1,
+            )
+            tooltip += '<br>' + value_formatted + ' ' + extra_metric_name
+
+    return tooltip
+
+
+def _get_color_value(
+    ancestors: tuple[str, ...] | None,
+    level: str | None,
+    entry: dict[str, typing.Any] | None,
+    color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None,
+) -> str | int | float | None:
+    if entry is not None and level is not None and ancestors is not None:
+        if isinstance(color_nodes, str):
+            return entry.get(color_nodes)
+        elif isinstance(color_nodes, dict):
+            if entry[level] in color_nodes:
+                return color_nodes[entry[level]]  # type: ignore
+            elif ancestors in color_nodes:
+                return color_nodes[ancestors]  # type: ignore
+            else:
+                return None
+        elif color_nodes is None:
+            return None
+        else:
+            raise Exception('invalid color_nodes: ' + str(color_nodes))
+    else:
+        return None
