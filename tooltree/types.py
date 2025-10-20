@@ -17,7 +17,7 @@ class TreemapData(typing.TypedDict):
     labels: list[str]
     parents: list[str | None]
     sizes: list[int | float]
-    customdata: list[str]
+    tooltips: list[str]
     node_colors: typing.MutableSequence[str | int | float | None] | None
 
 

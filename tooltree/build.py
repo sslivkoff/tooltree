@@ -36,7 +36,7 @@ def create_treemap_data(
         'labels': [],
         'parents': [],
         'sizes': [],
-        'customdata': [],
+        'tooltips': [],
         'total_size': df[metric].sum(),
         'metric': metric,
         'root': root,
@@ -229,7 +229,7 @@ def _add_treemap_entry(
     treemap_data['ids'].append(id)
     treemap_data['parents'].append(parent_id)
     treemap_data['sizes'].append(size)
-    treemap_data['customdata'].append(tooltip)
+    treemap_data['tooltips'].append(tooltip)
     if treemap_data['node_colors'] is not None:
         treemap_data['node_colors'].append(color_value)
 

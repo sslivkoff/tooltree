@@ -62,7 +62,7 @@ def create_treemap_figure(
         labels=treemap_data['labels'],
         parents=treemap_data['parents'],
         values=treemap_data['sizes'],
-        customdata=treemap_data['customdata'],
+        customdata=treemap_data['tooltips'],
         branchvalues='total',
         **treemap_object_kwargs,
         **treemap_color_kwargs,
