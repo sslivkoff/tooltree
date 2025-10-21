@@ -42,6 +42,7 @@ def _get_color_kwargs(
     color_branches: list[str] | dict[str, str] | None = None,
     color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
     color_root: str | None = None,
+    color_default: str | int | float | None = None,
     cmap: str | None = None,
     cmin: int | float | None = None,
     cmid: int | float | None = None,
@@ -68,8 +69,10 @@ def _get_color_kwargs(
         if isinstance(color_branches, (list, pl.Series)):
             layout_color_kwargs['treemapcolorway'] = color_branches
         elif isinstance(color_branches, dict):
+            if color_default is None:
+                color_default = defaults.default_branch_color
             layout_color_kwargs['treemapcolorway'] = [
-                color_branches.get(node_id, 'lightgrey')
+                color_branches.get(node_id, color_default)
                 for node_id, parent in zip(ids, parents)
                 if parent == root
             ]
