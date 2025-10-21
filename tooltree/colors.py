@@ -73,7 +73,6 @@ def _get_color_kwargs(
                 for node_id, parent in zip(ids, parents)
                 if parent == root
             ]
-            raise Exception()
         else:
             raise Exception('color_branches must be list or dict or None')
         if len(layout_color_kwargs['treemapcolorway']) > 0:

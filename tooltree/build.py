@@ -191,23 +191,19 @@ def _add_treemap_entry(
     color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None,
     extra_metrics: list[str | pl.Expr] | None = None,
 ) -> None:
-    # compute ancestors
-    if ancestors is None:
-        ancestors = typing.cast(tuple[str, ...], ())
-    else:
-        ancestors = (treemap_data['root'],) + tuple(
-            _add_name_newlines(ancestor, root=treemap_data['root'])
-            for ancestor in ancestors
-        )
-
     # compute identifiers
-    name = _add_name_newlines(name, root=treemap_data['root'])
-    id = '__'.join(ancestors + (name,))
-    parent_id = '__'.join(ancestors)
+    id = '__'.join((ancestors or ()) + (name,))
+    label = _add_name_newlines(name, root=treemap_data['root'])
+    if ancestors is None:
+        parent_id = ''
+    elif ancestors == ():
+        parent_id = treemap_data['root']
+    else:
+        parent_id = '__'.join(ancestors)
 
     # create tooltip
     tooltip = _create_tooltip(
-        name=name,
+        name=label,
         ancestors=ancestors,
         parent_size=parent_size,
         size=size,
@@ -226,7 +222,7 @@ def _add_treemap_entry(
     )
 
     # add to treemap data
-    treemap_data['labels'].append(name)
+    treemap_data['labels'].append(label)
     treemap_data['ids'].append(id)
     treemap_data['parents'].append(parent_id)
     treemap_data['sizes'].append(size)
@@ -250,7 +246,7 @@ def _add_name_newlines(name: str, root: str) -> str:
 
 def _create_tooltip(
     name: str,
-    ancestors: tuple[str, ...],
+    ancestors: tuple[str, ...] | None,
     parent_size: int | float | None,
     size: int | float,
     treemap_data: types.TreemapData,
@@ -265,7 +261,7 @@ def _create_tooltip(
     # add size to tooltip
     if metric_format is None:
         metric_format = {}
-    tooltip += toolstr.format(size, **metric_format)
+    tooltip += ' ' + toolstr.format(size, **metric_format)
 
     # add percentage to tooltip
     fraction = size / treemap_data['total_size']
@@ -273,7 +269,11 @@ def _create_tooltip(
     tooltip += '<br>' + fraction_str + ' of ' + treemap_data['metric']
 
     # add parent percentage to tooltip
-    if len(ancestors) > 1 and parent_size is not None:
+    if (
+        ancestors is not None
+        and len(ancestors) >= 1
+        and parent_size is not None
+    ):
         as_str = toolstr.format(size / parent_size, percentage=True, decimals=1)
         tooltip += '<br>' + as_str + ' of ' + ancestors[-1]
 
