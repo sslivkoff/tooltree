@@ -1,6 +1,6 @@
 """functions for creating treemap data visualizations"""
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 import typing
 from .output import plot_treemap
