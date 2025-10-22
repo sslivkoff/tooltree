@@ -26,8 +26,8 @@ def _get_node_color(
         elif isinstance(color_nodes, dict):
             if entry[level] in color_nodes:
                 return color_nodes[entry[level]]  # type: ignore
-            elif ancestors in color_nodes:
-                return color_nodes[ancestors]  # type: ignore
+            elif ancestors + (entry[level],) in color_nodes:
+                return color_nodes[ancestors + (entry[level],)]  # type: ignore
             else:
                 return None
         elif color_nodes is None:
@@ -98,8 +98,9 @@ def _get_color_kwargs(
         if treemap_color_kwargs['marker_colors'] is None:
             raise ValueError('color_nodes column not found in treemap_data')
         if len(treemap_color_kwargs['marker_colors']) > 0:
-            use_color_scale = isinstance(
-                treemap_color_kwargs['marker_colors'][-1], (int, float)
+            use_color_scale = any(
+                isinstance(item, (int, float))
+                for item in treemap_color_kwargs['marker_colors']
             )
     else:
         raise Exception()
