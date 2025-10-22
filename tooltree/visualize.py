@@ -7,15 +7,15 @@ from . import types
 if typing.TYPE_CHECKING:
     import polars as pl
     import plotly.graph_objects as go  # type: ignore
+    from typing import Mapping
 
 
 def create_treemap_figure(
     treemap_data: types.TreemapData,
     *,
-    color_branches: list[str] | dict[str, str] | None = None,
-    color_nodes: str
-    | typing.Mapping[str | tuple[str, ...], typing.Any]
-    | None = None,
+    metric: str,
+    color_branches: list[str] | dict[str, str | None] | None = None,
+    color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
     color_root: str | None = None,
     cmap: str | None = None,
     cmin: int | float | None = None,
@@ -42,6 +42,7 @@ def create_treemap_figure(
         cmid=cmid,
         cmax=cmax,
         color_bar=color_bar,
+        metric=metric,
     )
 
     # compile general treemap kwargs

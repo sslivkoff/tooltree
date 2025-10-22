@@ -24,6 +24,7 @@ def create_treemap_data(
     min_root_child_fraction: float | None = None,
     color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
     color_agg: pl.Expr | None = None,
+    color_root: str | None = None,
 ) -> types.TreemapData:
     import polars as pl
 
@@ -56,6 +57,7 @@ def create_treemap_data(
         level=None,
         color_nodes=None,
         extra_metrics=None,
+        color_root=color_root,
     )
 
     # level nodes
@@ -98,6 +100,7 @@ def create_treemap_data(
                     level=level,
                     color_nodes=color_nodes,
                     extra_metrics=extra_metrics,
+                    color_root=color_root,
                 )
                 children_count.setdefault(ancestors, 0)
                 children_count[ancestors] += 1
@@ -190,6 +193,7 @@ def _add_treemap_entry(
     entry: dict[str, typing.Any] | None,
     color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None,
     extra_metrics: list[str | pl.Expr] | None = None,
+    color_root: str | None,
 ) -> None:
     # compute identifiers
     id = '__'.join((ancestors or ()) + (name,))
@@ -219,6 +223,7 @@ def _add_treemap_entry(
         level=level,
         entry=entry,
         color_nodes=color_nodes,
+        color_root=color_root,
     )
 
     # add to treemap data

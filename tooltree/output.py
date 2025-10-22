@@ -34,7 +34,7 @@ def plot_treemap(
     treemap_object_kwargs: dict[str, typing.Any] | None = None,
     trace_kwargs: dict[str, typing.Any] | None = None,
     layout_kwargs: dict[str, typing.Any] | None = None,
-    color_branches: list[str] | dict[str, str] | None = None,
+    color_branches: list[str] | dict[str, str | None] | None = None,
     color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
     color_agg: pl.Expr | None = None,
     color_root: str | None = None,
@@ -54,9 +54,9 @@ def plot_treemap(
     - [Color: str | int | float]
         - if numerical, use color scale
         - if str, interpret as color (e.g. 'red', '#ff0000', 'rgb(255, 0, 0)')
-    1. color_branches: list[Color | None]
+    1. color_branches: list[ColorStr | None]
         - list of colors for toplevel branches
-    2. color_branches: dict[str, Color | None]
+    2. color_branches: dict[str, ColorStr | None]
         - map from branch name to color, root branches only
     3. color_nodes: str
         - column name of node color values
@@ -76,9 +76,11 @@ def plot_treemap(
         min_root_child_fraction=min_root_child_fraction,
         color_nodes=color_nodes,
         color_agg=color_agg,
+        color_root=color_root,
     )
     fig = visualize.create_treemap_figure(
         treemap_data=treemap_data,
+        metric=metric,
         height=height,
         width=width,
         max_depth=max_depth,

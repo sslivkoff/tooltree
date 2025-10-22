@@ -17,6 +17,7 @@ def _get_node_color(
     level: str | None,
     entry: dict[str, typing.Any] | None,
     color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None,
+    color_root: str | None,
 ) -> str | int | float | None:
     """get the color of an individual node for when color_nodes is specificed"""
     if entry is not None and level is not None and ancestors is not None:
@@ -33,13 +34,19 @@ def _get_node_color(
             return None
         else:
             raise Exception('invalid color_nodes: ' + str(color_nodes))
+    elif ancestors is None:
+        if color_root is not None:
+            return color_root
+        else:
+            return 'white'
     else:
         return None
 
 
 def _get_color_kwargs(
     treemap_data: types.TreemapData,
-    color_branches: list[str] | dict[str, str] | None = None,
+    metric: str,
+    color_branches: list[str] | dict[str, str | None] | None = None,
     color_nodes: str | Mapping[str | tuple[str, ...], typing.Any] | None = None,
     color_root: str | None = None,
     color_default: str | int | float | None = None,
@@ -69,13 +76,17 @@ def _get_color_kwargs(
         if isinstance(color_branches, (list, pl.Series)):
             layout_color_kwargs['treemapcolorway'] = color_branches
         elif isinstance(color_branches, dict):
-            if color_default is None:
-                color_default = defaults.default_branch_color
-            layout_color_kwargs['treemapcolorway'] = [
-                color_branches.get(node_id, color_default)
-                for node_id, parent in zip(ids, parents)
-                if parent == root
-            ]
+            if all(isinstance(v, str) for v in color_branches.values()):
+                # label colors
+                if color_default is None:
+                    color_default = defaults.default_branch_color
+                layout_color_kwargs['treemapcolorway'] = [
+                    color_branches.get(node_id, color_default)
+                    for node_id, parent in zip(ids, parents)
+                    if parent == root
+                ]
+            else:
+                raise Exception('invalid types in color_branches')
         else:
             raise Exception('color_branches must be list or dict or None')
         if len(layout_color_kwargs['treemapcolorway']) > 0:
@@ -88,7 +99,7 @@ def _get_color_kwargs(
             raise ValueError('color_nodes column not found in treemap_data')
         if len(treemap_color_kwargs['marker_colors']) > 0:
             use_color_scale = isinstance(
-                treemap_color_kwargs['marker_colors'][0], (int, float)
+                treemap_color_kwargs['marker_colors'][-1], (int, float)
             )
     else:
         raise Exception()
@@ -98,6 +109,21 @@ def _get_color_kwargs(
         treemap_color_kwargs['marker_cmin'] = cmin
         treemap_color_kwargs['marker_cmid'] = cmid
         treemap_color_kwargs['marker_cmax'] = cmax
-        treemap_color_kwargs['marker_colorbar'] = color_bar
+
+        if color_bar:
+            if isinstance(color_bar, dict):
+                cbar: dict[str, typing.Any] = color_bar
+            else:
+                cbar = {}
+            if isinstance(color_nodes, str) and color_nodes != metric:
+                cbar.setdefault('title', color_nodes)
+            cbar.setdefault(
+                'title.font', dict(family='monospace', size=20, color='black')
+            )
+            cbar.setdefault(
+                'tickfont', dict(family='monospace', size=16, color='black')
+            )
+            treemap_color_kwargs['marker_showscale'] = True
+            treemap_color_kwargs['marker_colorbar'] = cbar
 
     return treemap_color_kwargs, layout_color_kwargs
